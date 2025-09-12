@@ -1,40 +1,116 @@
 import express from "express";
 import { supabase } from "./supabase-client.js";
 import cors from "cors";
+import validator from "validator";
+import sanitizeHtml from "sanitize-html";
+import helmet from "helmet";
+
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
-// Allow all origins (for dev)
 app.use(cors());
+app.use(helmet());
+
 app.post("/signup", async (req, res) => {
   let { email, username, password } = req.body;
 
-  let { data, error: authError } = await supabase.auth.signUp({
-    email: email,
-    password: password,
-    options: {
-      data: {
-        username: username,
+  if (!email || !password || !username) {
+    return res.status(400).json({ error: "Credentials are incomplete" });
+  }
+
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+  username = validator.escape(username);
+  username = sanitizeHtml(username);
+
+  try {
+    //check if user exists
+    let { data: existingUser, error } = await supabase
+      .from("users")
+      .select("username, email")
+      .or(`username.eq.${username},email.eq.${email}`)
+      .maybeSingle(); // returns 1 row or null
+
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    //auth signup
+    let { data, error: authError } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        data: {
+          username: username,
+        },
       },
-    },
-  });
+    });
 
-  if (authError) {
-    console.error("Error authenticating user to supabase: ", error.message);
-    return;
-  }
+    if (authError) {
+      if (authError.code == "email_address_invalid") {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
 
-  let { error: dbError } = await supabase.from("users").insert({
-    username: username,
-    uuid: data.user.id,
-  });
-  if (dbError) {
-    console.error("Error signing up user to supabase: ", error.message);
-    return;
+      console.error("Error authenticating user to supabase: ", authError);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+
+    //add in users table
+    let { error: dbError } = await supabase.from("users").insert({
+      username: username,
+      uuid: data.user.id,
+      email: email,
+    });
+    if (dbError) {
+      await supabase.auth.admin.deleteUser(data.user.id);
+      console.error("Error signing up user to supabase: ", dbError);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    return res.status(201).json({ message: "User created successfully" });
+  } catch (err) {
+    console.error("Error in signup middleware: ", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-  return res.status(200).json({ message: "User created successfully" });
+});
+
+app.post("/login", async (req, res) => {
+  let { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: "Credentials are incomplete" });
+  }
+  email = validator.escape(email);
+  email = sanitizeHtml(email);
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      if (error.message == "Email not confirmed") {
+        return res
+          .status(403)
+          .json({ error: "Email not confirmed by user yet" });
+      }
+      if (error.message == "Invalid login credentials") {
+        return res.status(401).json({
+          error: "Wrong credentials, No user with such credentitals exits",
+        });
+      }
+      console.error("Login failed:", error.message);
+      return res.status(400).json({ error: "Login failed" });
+    }
+
+    console.log("User session:", data.session);
+    console.log("User info:", data.user);
+
+    return res.status(200).json({ message: "User Logged in successfully" });
+  } catch (err) {
+    console.error("Error in login middleware: ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 app.listen(port, () => {
