@@ -4,14 +4,31 @@ import cors from "cors";
 import validator from "validator";
 import sanitizeHtml from "sanitize-html";
 import helmet from "helmet";
-
+import cookie from "cookie";
+import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
-app.use(cors());
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 app.use(helmet());
+app.use(cookieParser());
+
+function verifyToken(req, res, next) {
+  const token = req.cookies.access_token;
+  if (!token)
+    return res.status(401).json({ message: "Access token is not present" });
+
+  try {
+    const payload = jwt.verify(token, process.env.SUPABASE_JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Access token is invalid" });
+  }
+}
 
 app.post("/signup", async (req, res) => {
   let { email, username, password } = req.body;
@@ -102,15 +119,66 @@ app.post("/login", async (req, res) => {
       console.error("Login failed:", error.message);
       return res.status(400).json({ error: "Login failed" });
     }
-
-    console.log("User session:", data.session);
-    console.log("User info:", data.user);
-
-    return res.status(200).json({ message: "User Logged in successfully" });
+    //setting access token and refresh token
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", data.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60, // 1 hour
+        path: "/",
+      }),
+      cookie.serialize("refresh_token", data.session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 30, // ~30 days
+        path: "/",
+      }),
+    ]);
+    console.log("User logged in");
+    return res.status(200).json({
+      message: "User Logged in successfully",
+      email: data.user.email,
+      username: data.user.user_metadata.username,
+    });
   } catch (err) {
     console.error("Error in login middleware: ", err);
     return res.status(500).json({ error: "Internal server error" });
   }
+});
+
+app.get("/refresh", async (req, res) => {
+  const refresh_token = req.cookies.refresh_token;
+  if (!refresh_token) return res.sendStatus(401);
+
+  const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+
+  if (error) return res.status(400).json({ error: error.message });
+
+  const { session } = data;
+  res.setHeader("Set-Cookie", [
+    cookie.serialize("access_token", session.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60,
+      path: "/",
+    }),
+    cookie.serialize("refresh_token", session.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 30,
+      path: "/",
+    }),
+  ]);
+
+  res.json({ user: session.user });
+});
+
+app.get("/hello", verifyToken, (req, res) => {
+  return res.status(200).json({ message: "Secure path" });
 });
 
 app.listen(port, () => {
