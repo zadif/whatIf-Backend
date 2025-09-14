@@ -148,6 +148,27 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/logout", async (req, res) => {
+  res.setHeader("Set-Cookie", [
+    cookie.serialize("access_token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 0, // 1 hour
+      path: "/",
+    }),
+    cookie.serialize("refresh_token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      maxAge: 0, // ~30 days
+      path: "/",
+    }),
+  ]);
+  console.log("User logged out");
+  return res.status(200).json({ message: "User logged out" });
+});
+
 app.get("/refresh", async (req, res) => {
   const refresh_token = req.cookies.refresh_token;
   if (!refresh_token) return res.sendStatus(401);
