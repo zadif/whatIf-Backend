@@ -87,7 +87,7 @@ app.get("/self", verifyToken, async (req, res) => {
       console.error("Error from supabase while fetching feeds: ", error);
     }
     console.log(data);
-    return data;
+    res.json(data);
   } catch (err) {
     console.error("Error in feed middleware: ", err);
   }
