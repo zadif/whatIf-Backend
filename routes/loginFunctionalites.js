@@ -4,6 +4,7 @@ import sanitizeHtml from "sanitize-html";
 import { supabase } from "../scripts/supabase-client.js";
 import cookie from "cookie";
 import { verifyToken } from "../scripts/verifyToken.js";
+import jwt from "jsonwebtoken";
 
 let router = express.Router();
 
@@ -114,6 +115,8 @@ router.post("/login", async (req, res) => {
       }),
     ]);
     console.log("User logged in");
+   
+    
     return res.status(200).json({
       message: "User Logged in successfully",
       email: data.user.email,

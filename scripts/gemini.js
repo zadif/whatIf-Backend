@@ -77,6 +77,7 @@ export async function checker(str, option, tone) {
     response = await generate(prompt);
   } catch (err) {
     console.log(err);
+    return "error";
   }
   return response;
 }

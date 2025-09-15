@@ -1,5 +1,5 @@
 import express from "express";
-import { supabase } from "./scripts/supabase-client.js";
+import { supabase, supabaseWithAuth } from "./scripts/supabase-client.js";
 import cors from "cors";
 import validator from "validator";
 import sanitizeHtml from "sanitize-html";
@@ -40,7 +40,25 @@ app.post("/generate", verifyToken, async (req, res) => {
   prompt = sanitizeHtml(prompt);
   try {
     let response = await checker(prompt, option, tone);
+    if (response != "fishy" && response != "error") {
+      const decoded = jwt.decode(req.cookies.access_token);
+      const userId = decoded.sub;
+      //get uuid here
 
+      let supabase2 = supabaseWithAuth(req);
+      let { error } = await supabase2.from("whatifs").insert({
+        prompt: prompt,
+        tone: tone,
+        type: option,
+        response: response,
+        userID: userId,
+        public: false,
+      });
+
+      if (error) {
+        console.error("Error inserting whatif in supabase: ", error);
+      }
+    }
     return res.status(200).json({ message: response });
   } catch (err) {
     console.error("Error in generate middleware: ", err);
