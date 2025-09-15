@@ -19,7 +19,12 @@ const port = 3000;
 
 app.use(express.json());
 
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:4173"],
+    credentials: true,
+  })
+);
 app.use(helmet());
 app.use(cookieParser());
 
@@ -27,11 +32,12 @@ app.use(loginRouter);
 app.use(refresh);
 
 app.get("/hello", verifyToken, (req, res) => {
+  console.log("hello");
   return res.status(200).json({ message: "Secure path" });
 });
 
 app.post("/generate", verifyToken, async (req, res) => {
-  let { prompt, option, tone } = req.body;
+  let { prompt, option, tone, publi, username } = req.body;
 
   if (!prompt || !option || !tone) {
     return res.status(400).json({ message: "Credentials are incomplete" });
@@ -52,7 +58,8 @@ app.post("/generate", verifyToken, async (req, res) => {
         type: option,
         response: response,
         userID: userId,
-        public: false,
+        public: publi,
+        username: username,
       });
 
       if (error) {
@@ -63,6 +70,44 @@ app.post("/generate", verifyToken, async (req, res) => {
   } catch (err) {
     console.error("Error in generate middleware: ", err);
     return res.status(400).json({ message: "Error in generating" });
+  }
+});
+app.get("/self", verifyToken, async (req, res) => {
+  try {
+    const decoded = jwt.decode(req.cookies.access_token);
+    const userId = decoded.sub;
+
+    let supabase2 = supabaseWithAuth(req);
+    const { data, error } = await supabase2
+      .from("whatifs")
+      .select("*")
+      .eq("userID", userId);
+
+    if (error) {
+      console.error("Error from supabase while fetching feeds: ", error);
+    }
+    console.log(data);
+    return data;
+  } catch (err) {
+    console.error("Error in feed middleware: ", err);
+  }
+});
+app.get("/feed", verifyToken, async (req, res) => {
+  try {
+    const decoded = jwt.decode(req.cookies.access_token);
+    const userId = decoded.sub;
+    let supabase2 = supabaseWithAuth(req);
+    const { data, error } = await supabase2
+      .from("whatifs")
+      .select("*")
+      .neq("userID", userId) // exclude my own posts
+      .eq("public", true); // only public posts
+    if (error) {
+      console.error("Error from supabase while fetching feeds: ", error);
+    }
+    res.json(data);
+  } catch (err) {
+    console.error("Error in feed middleware: ", err);
   }
 });
 
