@@ -151,4 +151,30 @@ router.get("/logout", verifyToken, async (req, res) => {
   return res.status(200).json({ message: "User logged out" });
 });
 
+router.post("/setCookies", (req, res) => {
+  try {
+    console.log("Inside setCookies");
+    let { accessToken, refreshToken } = req.body;
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60, // 1 hour
+        path: "/",
+      }),
+      cookie.serialize("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 30, // ~30 days
+        path: "/",
+      }),
+    ]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error in setCookies middleware: ", err);
+  }
+});
+
 export default router;
