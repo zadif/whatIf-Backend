@@ -46,6 +46,11 @@ app.post("/generate", verifyToken, async (req, res) => {
   prompt = sanitizeHtml(prompt);
   try {
     let response = await checker(prompt, option, tone);
+
+    if (response == "Model is overloaded. Try again in few seconds") {
+      return res.status(401).json({ message: response });
+    }
+
     if (response != "fishy" && response != "error") {
       const decoded = jwt.decode(req.cookies.access_token);
       const userId = decoded.sub;
@@ -65,6 +70,9 @@ app.post("/generate", verifyToken, async (req, res) => {
       if (error) {
         console.error("Error inserting whatif in supabase: ", error);
       }
+    }
+    if (response == "error") {
+      return res.status(400).json({ message: response });
     }
     return res.status(200).json({ message: response });
   } catch (err) {
@@ -86,7 +94,6 @@ app.get("/self", verifyToken, async (req, res) => {
     if (error) {
       console.error("Error from supabase while fetching feeds: ", error);
     }
-    console.log(data);
     res.json(data);
   } catch (err) {
     console.error("Error in feed middleware: ", err);
@@ -108,6 +115,32 @@ app.get("/feed", verifyToken, async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error("Error in feed middleware: ", err);
+  }
+});
+
+app.post("/setCookies", (req, res) => {
+  try {
+    console.log("Inside setCookies");
+    let { accessToken, refreshToken } = req.body;
+    res.setHeader("Set-Cookie", [
+      cookie.serialize("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60, // 1 hour
+        path: "/",
+      }),
+      cookie.serialize("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        maxAge: 60 * 60 * 24 * 30, // ~30 days
+        path: "/",
+      }),
+    ]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error in setCookies middleware: ", err);
   }
 });
 

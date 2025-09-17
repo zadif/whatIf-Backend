@@ -30,7 +30,9 @@ router.post("/signup", async (req, res) => {
       .maybeSingle(); // returns 1 row or null
 
     if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
+      return res
+        .status(400)
+        .json({ error: "User already exists with these credentials" });
     }
 
     //auth signup
@@ -115,8 +117,7 @@ router.post("/login", async (req, res) => {
       }),
     ]);
     console.log("User logged in");
-   
-    
+
     return res.status(200).json({
       message: "User Logged in successfully",
       email: data.user.email,

@@ -77,6 +77,13 @@ export async function checker(str, option, tone) {
     response = await generate(prompt);
   } catch (err) {
     console.log(err);
+    if (
+      err.code == 503 &&
+      err.message == "The model is overloaded. Please try again later."
+    ) {
+      return "Model is overloaded. Try again in few seconds";
+    }
+
     return "error";
   }
   return response;
