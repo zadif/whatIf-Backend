@@ -80,21 +80,28 @@ app.post("/generate", verifyToken, async (req, res) => {
     return res.status(400).json({ message: "Error in generating" });
   }
 });
-app.get("/self", verifyToken, async (req, res) => {
+app.get("/self/:name", verifyToken, async (req, res) => {
   try {
-    const decoded = jwt.decode(req.cookies.access_token);
-    const userId = decoded.sub;
+    let { name } = req.params;
 
     let supabase2 = supabaseWithAuth(req);
-    const { data, error } = await supabase2
+    const { data: whatIfData, error: whatIfError } = await supabase2
       .from("whatifs")
       .select("*")
-      .eq("userID", userId);
+      .eq("username", name);
 
-    if (error) {
-      console.error("Error from supabase while fetching feeds: ", error);
+    let { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("email")
+      .eq("username", name)
+      .single();
+    if (whatIfError) {
+      console.error("Error from supabase while fetching feeds: ", whatIfError);
     }
-    res.json(data);
+    if (userError) {
+      console.error("Error from supabase while fetching user: ", userError);
+    }
+    res.json({ data: whatIfData, email: userData.email });
   } catch (err) {
     console.error("Error in feed middleware: ", err);
   }
