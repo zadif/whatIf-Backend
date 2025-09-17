@@ -89,17 +89,19 @@ app.get("/self/:name", verifyToken, async (req, res) => {
       .from("whatifs")
       .select("*")
       .eq("username", name);
-
+    if (whatIfError) {
+      console.error("Error from supabase while fetching feeds: ", whatIfError);
+      return res.status(400).json({ message: "Error while fetching feed" });
+    }
     let { data: userData, error: userError } = await supabase
       .from("users")
       .select("email")
       .eq("username", name)
       .single();
-    if (whatIfError) {
-      console.error("Error from supabase while fetching feeds: ", whatIfError);
-    }
+
     if (userError) {
       console.error("Error from supabase while fetching user: ", userError);
+      return res.status(400).json({ message: "Error while fetching feed" });
     }
     res.json({ data: whatIfData, email: userData.email });
   } catch (err) {
