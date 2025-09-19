@@ -65,4 +65,41 @@ router.get("/feed", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/whatIf", verifyToken, async (req, res) => {
+  let { postId } = req.body;
+
+  if (!postId) {
+    return res.status(400).json({ message: " postID  is missing" });
+  }
+  const parsedId = Number(postId);
+  if (
+    isNaN(parsedId) || // not a number
+    parsedId < 0 || // negative
+    !Number.isInteger(parsedId) // fraction/decimal
+  ) {
+    return res
+      .status(400)
+      .json({ message: "postID must be a non-negative integer" });
+  }
+  try {
+    let supabase2 = supabaseWithAuth(req);
+
+    const { data, error } = await supabase2
+      .from("whatifs")
+      .select("*")
+      .eq("id", parsedId);
+    if (error) {
+      console.error("Error fetching whatif from server:", error);
+      return res.status(500).json({ message: "Server side error" });
+    }
+    if (!data[0]) {
+      return res.status(404).json({ message: "WhatIf not Founded" });
+    }
+    res.json(data[0]);
+  } catch (err) {
+    console.error("Error in whatif middleware: ", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 export default router;
