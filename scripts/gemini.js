@@ -86,5 +86,6 @@ export async function checker(str, option, tone) {
 
     return "error";
   }
-  return response;
+  let cleanedResponse = response.replace(/^\*+|\*+$/g, "");
+  return cleanedResponse;
 }

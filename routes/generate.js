@@ -10,7 +10,7 @@ let router = express.Router();
 
 router.post("/generate", verifyToken, async (req, res) => {
   let { prompt, option, tone, publi, username } = req.body;
-
+  let id;
   if (!prompt || !option || !tone) {
     return res.status(400).json({ message: "Credentials are incomplete" });
   }
@@ -29,24 +29,30 @@ router.post("/generate", verifyToken, async (req, res) => {
       //get uuid here
 
       let supabase2 = supabaseWithAuth(req);
-      let { error } = await supabase2.from("whatifs").insert({
-        prompt: prompt,
-        tone: tone,
-        type: option,
-        response: response,
-        userID: userId,
-        public: publi,
-        username: username,
-      });
+      let { error, data } = await supabase2
+        .from("whatifs")
+        .insert({
+          prompt: prompt,
+          tone: tone,
+          type: option,
+          response: response,
+          userID: userId,
+          public: publi,
+          username: username,
+        })
+        .select();
 
       if (error) {
         console.error("Error inserting whatif in supabase: ", error);
+      }
+      if (data[0]) {
+        id = data[0].id;
       }
     }
     if (response == "error") {
       return res.status(400).json({ message: response });
     }
-    return res.status(200).json({ message: response });
+    return res.status(200).json({ postId: id });
   } catch (err) {
     console.error("Error in generate middleware: ", err);
     return res.status(400).json({ message: "Error in generating" });
