@@ -15,6 +15,7 @@ import loginRouter from "./routes/loginFunctionalites.js";
 import refresh from "./routes/refresh.js";
 import generate from "./routes/generate.js";
 import fetching from "./routes/fetching.js";
+import like from "./routes/like.js";
 
 const app = express();
 const port = 3000;
@@ -34,42 +35,11 @@ app.use(loginRouter);
 app.use(refresh);
 app.use(generate);
 app.use(fetching);
+app.use(like);
 
 app.get("/hello", verifyToken, (req, res) => {
   console.log("hello");
   return res.status(200).json({ message: "Secure path" });
-});
-
-app.post("/like", verifyToken, async (req, res) => {
-  let { postID, action } = req.body;
-
-  if (!postID || !action) {
-    return res
-      .status(500)
-      .json({ message: "Either postID or action is missing" });
-  }
-
-  const decoded = jwt.decode(req.cookies.access_token);
-  const userId = decoded.sub;
-
-  try {
-    let supabase2 = supabaseWithAuth(req);
-
-    const postIDNum = Number(postID);
-    const { data, error } = await supabase2.rpc("toggle_like", {
-      p_user: userId,
-      p_post_id: postIDNum,
-      action,
-    });
-    if (error) {
-      console.error("Error calling increment_like:", error);
-      return res.status(500).json({ message: error.message });
-    }
-
-    res.sendStatus(200);
-  } catch (err) {
-    console.error("Error in like middleware: ", err);
-  }
 });
 
 app.listen(port, () => {

@@ -1,12 +1,10 @@
 import express from "express";
 
-import express from "express";
-import { supabase, supabaseWithAuth } from "./scripts/supabase-client.js";
+import { supabase, supabaseWithAuth } from "../scripts/supabase-client.js";
 
-import cookie from "cookie";
 import jwt from "jsonwebtoken";
 
-import { verifyToken } from "./scripts/verifyToken.js";
+import { verifyToken } from "../scripts/verifyToken.js";
 
 let router = express.Router();
 
