@@ -43,6 +43,12 @@ app.get("/hello", verifyToken, (req, res) => {
 app.post("/like", verifyToken, async (req, res) => {
   let { postID, action } = req.body;
 
+  if (!postID || !action) {
+    return res
+      .status(500)
+      .json({ message: "Either postID or action is missing" });
+  }
+
   const decoded = jwt.decode(req.cookies.access_token);
   const userId = decoded.sub;
 
@@ -55,7 +61,6 @@ app.post("/like", verifyToken, async (req, res) => {
       p_post_id: postIDNum,
       action,
     });
-
     if (error) {
       console.error("Error calling increment_like:", error);
       return res.status(500).json({ message: error.message });
