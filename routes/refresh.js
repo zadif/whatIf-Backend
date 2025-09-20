@@ -11,8 +11,7 @@ router.get("/refresh", async (req, res) => {
   if (!refresh_token) return res.sendStatus(401);
 
   const { data, error } = await supabase.auth.refreshSession({ refresh_token });
-
-  if (error) return res.status(400).json({ error: error.message });
+  if (error) return res.status(400).json({ message: error.message });
 
   const { session } = data;
   res.setHeader("Set-Cookie", [
@@ -32,7 +31,12 @@ router.get("/refresh", async (req, res) => {
     }),
   ]);
 
-  res.json({ user: session.user });
+  //Sending these as I am deleting and updating
+  //localstorage items on every refresh call
+  res.json({
+    username: data.user.user_metadata.username,
+    email: data.user.email,
+  });
 });
 
 export default router;

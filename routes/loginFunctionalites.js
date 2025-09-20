@@ -129,7 +129,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/logout", verifyToken, async (req, res) => {
+router.get("/logout", async (req, res) => {
   await supabase.auth.signOut();
   res.setHeader("Set-Cookie", [
     cookie.serialize("access_token", "", {
