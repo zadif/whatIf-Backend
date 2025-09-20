@@ -58,7 +58,6 @@ router.get("/feed", verifyToken, async (req, res) => {
       console.error("Error fetching feed:", error);
       return res.status(500).json({ message: error.message });
     }
-
     res.json(data);
   } catch (err) {
     console.error("Error in feed middleware: ", err);
@@ -102,4 +101,67 @@ router.post("/whatIf", verifyToken, async (req, res) => {
   }
 });
 
+router.post("/update", verifyToken, async (req, res) => {
+  let { postId, publi } = req.body;
+  if (!postId) {
+    return res.status(400).json({ message: " postID  is missing" });
+  }
+  const parsedId = Number(postId);
+  if (
+    isNaN(parsedId) || // not a number
+    parsedId < 0 || // negative
+    !Number.isInteger(parsedId) // fraction/decimal
+  ) {
+    return res
+      .status(400)
+      .json({ message: "postID must be a non-negative integer" });
+  }
+
+  try {
+    let supabase2 = supabaseWithAuth(req);
+
+    let { error } = await supabase2
+      .from("whatifs")
+      .update({ public: publi })
+      .eq("id", parsedId);
+    if (error) {
+      console.error("Error while updating public feild from supabase: ", error);
+      return res.status(500).json({ message: "Server side error" });
+    }
+    return res.status(200).json({ message: "updated" });
+  } catch (err) {
+    console.error("Error in updating public feild middleware: ", err);
+  }
+});
+
+router.delete("/whatIf", verifyToken, async (req, res) => {
+  let { postId } = req.body;
+
+  if (!postId) {
+    return res.status(400).json({ message: " postID  is missing" });
+  }
+  const parsedId = Number(postId);
+  if (
+    isNaN(parsedId) || // not a number
+    parsedId < 0 || // negative
+    !Number.isInteger(parsedId) // fraction/decimal
+  ) {
+    return res
+      .status(400)
+      .json({ message: "postID must be a non-negative integer" });
+  }
+
+  try {
+    let supabase2 = supabaseWithAuth(req);
+
+    let { error } = await supabase2.from("whatifs").delete().eq("id", parsedId);
+    if (error) {
+      console.error("Error while deleting whatif from supabase: ", error);
+      return res.status(500).json({ message: "Server side error" });
+    }
+    return res.status(200).json({ message: "deleted" });
+  } catch (err) {
+    console.error("Error in deleting whatif middleware: ", err);
+  }
+});
 export default router;
