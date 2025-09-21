@@ -18,13 +18,13 @@ import fetching from "./routes/fetching.js";
 import like from "./routes/like.js";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:4173"],
+    origin: ["http://localhost:5173", "https://whatif-eta.vercel.app"],
     credentials: true,
   })
 );
