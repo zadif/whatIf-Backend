@@ -24,7 +24,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://whatif-eta.vercel.app"],
+    origin: ["http://localhost:5173", "https://whatif-pied.vercel.app"],
     credentials: true,
   })
 );
