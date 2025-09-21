@@ -10,6 +10,9 @@ let router = express.Router();
 router.get("/self/:name", verifyToken, async (req, res) => {
   try {
     let { name } = req.params;
+    if (!name) {
+      return res.status(400).json({ message: "username is missing" });
+    }
     const decoded = jwt.decode(req.cookies.access_token);
     const userId = decoded.sub;
     let supabase2 = supabaseWithAuth(req);
@@ -26,7 +29,6 @@ router.get("/self/:name", verifyToken, async (req, res) => {
       console.error("Error from supabase while fetching feeds: ", whatIfError);
       return res.status(400).json({ message: "Error while fetching feed" });
     }
-
     //fetching email of the user
     let { data: userData, error: userError } = await supabase
       .from("users")
@@ -36,7 +38,7 @@ router.get("/self/:name", verifyToken, async (req, res) => {
 
     if (userError) {
       console.error("Error from supabase while fetching user: ", userError);
-      return res.status(400).json({ message: "Error while fetching feed" });
+      return res.status(400).json({ message: userError.details });
     }
     res.json({ data: whatIfData, email: userData.email });
   } catch (err) {
