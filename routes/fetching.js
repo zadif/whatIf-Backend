@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import { verifyToken } from "../scripts/verifyToken.js";
 
 import express from "express";
+import { getId } from "../scripts/getUserId.js";
+
 let router = express.Router();
 
 router.get("/self/:name", verifyToken, async (req, res) => {
@@ -85,6 +87,7 @@ router.post("/whatIf", verifyToken, async (req, res) => {
   try {
     let supabase2 = supabaseWithAuth(req);
 
+    //fetching for whatif
     const { data, error } = await supabase2
       .from("whatifs")
       .select("*")
@@ -96,6 +99,29 @@ router.post("/whatIf", verifyToken, async (req, res) => {
     if (!data[0]) {
       return res.status(404).json({ message: "WhatIf not Founded" });
     }
+
+    let userId = getId(req.cookies.access_token);
+    // fetching like status of user
+    let { data: likeData, error: likeError } = await supabase2
+      .from("likes")
+      .select("*")
+      .eq("whatifID", parsedId)
+      .eq("userID", userId)
+      .maybeSingle();
+
+    if (likeError) {
+      console.error(
+        "Error while fetching likes for a single post view: ",
+        likeError
+      );
+      //yaha return nhi kia , kiu ky agr yaha error aata ha
+      //usky begair bhi post show kr skty hain
+    }
+    let has_Liked = false;
+    if (likeData) {
+      has_Liked = true;
+    }
+    data[0].has_liked = has_Liked;
     res.json(data[0]);
   } catch (err) {
     console.error("Error in whatif middleware: ", err);

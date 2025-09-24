@@ -3,9 +3,31 @@ import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
 
-async function generate(str = "Hello") {
-  let api = process.env.Gemini_API;
+const apiKeys = [
+  process.env.GOOGLE_API_KEY_1,
+  process.env.GOOGLE_API_KEY_2,
+  process.env.GOOGLE_API_KEY_3,
+  process.env.GOOGLE_API_KEY_4,
+  process.env.GOOGLE_API_KEY_5,
+  process.env.GOOGLE_API_KEY_6,
+  process.env.GOOGLE_API_KEY_7,
+  process.env.GOOGLE_API_KEY_8,
+  process.env.GOOGLE_API_KEY_9,
+  process.env.GOOGLE_API_KEY_10,
+];
 
+// Index to keep track of current key
+let currentKeyIndex = 0;
+
+// Get the next API key in a round-robin manner
+function getNextApiKey() {
+  const key = apiKeys[currentKeyIndex];
+  currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
+  return key;
+}
+
+async function generate(str = "Hello") {
+  const api = getNextApiKey();
   const ai = new GoogleGenAI({
     apiKey: api,
   });
@@ -86,6 +108,6 @@ export async function checker(str, option, tone) {
 
     return "error";
   }
-  let cleanedResponse = response.replace(/^\*+|\*+$/g, "");
-  return cleanedResponse;
+  //let cleanedResponse = response.replace(/^\*+|\*+$/g, "");
+  return response;
 }

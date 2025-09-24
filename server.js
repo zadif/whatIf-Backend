@@ -28,6 +28,7 @@ app.use(
       "http://localhost:5173",
       "https://whatif-pied.vercel.app",
       "https://whatif.qzz.io",
+      "http://localhost:3001",
     ],
     credentials: true,
   })
