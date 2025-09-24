@@ -129,6 +129,22 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/resendOTP", async (req, res) => {
+  let { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
+  }
+  try {
+    await supabase.auth.resend({
+      type: "signup",
+      email,
+    });
+    return res.status(200).json({ message: "OTP resent successfully" });
+  } catch (err) {
+    console.error("Error in resend OTP middleware: ", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 router.get("/logout", async (req, res) => {
   await supabase.auth.signOut();
   res.setHeader("Set-Cookie", [
