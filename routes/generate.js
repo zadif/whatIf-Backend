@@ -23,7 +23,7 @@ router.post("/generate", verifyToken, async (req, res) => {
       return res.status(401).json({ message: response });
     }
 
-    if (response != "fishy" && response != "error") {
+    if (response != "fishy" && response != "error" && response != "fishy.") {
       const decoded = jwt.decode(req.cookies.access_token);
       const userId = decoded.sub;
       //get uuid here
@@ -49,11 +49,12 @@ router.post("/generate", verifyToken, async (req, res) => {
         id = data[0].id;
       }
     }
+    if (response == "fishy" || response == "fishy.") {
+      console.log("Inside fishy");
+      return res.status(400).json({ message: "Glitch in the matrix" });
+    }
     if (response == "error") {
       return res.status(400).json({ message: response });
-    }
-    if (response == "fishy") {
-      return res.status(400).json({ message: "Glitch in the matrix" });
     }
 
     return res.status(200).json({ postId: id });
