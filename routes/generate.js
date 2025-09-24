@@ -52,6 +52,10 @@ router.post("/generate", verifyToken, async (req, res) => {
     if (response == "error") {
       return res.status(400).json({ message: response });
     }
+    if (response == "fishy") {
+      return res.status(400).json({ message: "Glitch in the matrix" });
+    }
+
     return res.status(200).json({ postId: id });
   } catch (err) {
     console.error("Error in generate middleware: ", err);
