@@ -1,9 +1,9 @@
 import { supabase, supabaseWithAuth } from "../scripts/supabase-client.js";
 import validator from "validator";
-import sanitizeHtml from "sanitize-html";
 import jwt from "jsonwebtoken";
 import { checker } from "../scripts/gemini.js";
 import { verifyToken } from "../scripts/verifyToken.js";
+import sanitizeHtml from "sanitize-html";
 
 import express from "express";
 let router = express.Router();
@@ -28,6 +28,11 @@ router.post("/generate", verifyToken, async (req, res) => {
       const userId = decoded.sub;
       //get uuid here
 
+      //sanitizing response bcz bold tag is added there
+      response = sanitizeHtml(response, {
+        allowedTags: ["b"],
+        allowedAttributes: {},
+      });
       let supabase2 = supabaseWithAuth(req);
       let { error, data } = await supabase2
         .from("whatifs")
