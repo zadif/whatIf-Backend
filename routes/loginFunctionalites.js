@@ -1,11 +1,11 @@
 import express from "express";
 import validator from "validator";
 import sanitizeHtml from "sanitize-html";
-import { supabase } from "../scripts/supabase-client.js";
+import { supabase, supabaseAdmin } from "../scripts/supabase-client.js";
 import cookie from "cookie";
 import { verifyToken } from "../scripts/verifyToken.js";
 import jwt from "jsonwebtoken";
-
+import { sendEmail } from "../scripts/sendPulse.js";
 let router = express.Router();
 
 router.post("/signup", async (req, res) => {
@@ -36,15 +36,15 @@ router.post("/signup", async (req, res) => {
     }
 
     //auth signup
-    let { data, error: authError } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
+    const { data, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: email,
+        password: password,
+        email_confirm: false, // Ensures the user starts unconfirmed
+        user_metadata: {
           username: username,
         },
-      },
-    });
+      });
 
     if (authError) {
       if (authError.code == "email_address_invalid") {
@@ -66,6 +66,18 @@ router.post("/signup", async (req, res) => {
       console.error("Error signing up user to supabase: ", dbError);
       return res.status(500).json({ error: "Internal server error" });
     }
+    const { data: emailData, error: emailError } =
+      await supabaseAdmin.auth.admin.generateLink({
+        type: "signup",
+        email,
+      });
+    if (emailError) {
+      console.error("Error generating email confirmation link: ", emailError);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+    //sending email via Send Pulse
+    sendEmail(username, email, emailData?.properties?.action_link);
+
     return res.status(201).json({ message: "User created successfully" });
   } catch (err) {
     console.error("Error in signup middleware: ", err);

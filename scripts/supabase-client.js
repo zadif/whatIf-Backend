@@ -16,3 +16,7 @@ export function supabaseWithAuth(req) {
     },
   });
 }
+
+const supabaseServiceRoleKey = process.env.Supabase_Service_Role_Key;
+
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
