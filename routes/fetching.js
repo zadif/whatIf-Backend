@@ -68,8 +68,8 @@ router.get("/feed", verifyToken, async (req, res) => {
   }
 });
 
-router.post("/whatIf", verifyToken, async (req, res) => {
-  let { postId } = req.body;
+router.get("/whatIf/:postId", async (req, res) => {
+  let { postId } = req.params;
 
   if (!postId) {
     return res.status(400).json({ message: " postID  is missing" });
@@ -85,10 +85,8 @@ router.post("/whatIf", verifyToken, async (req, res) => {
       .json({ message: "postID must be a non-negative integer" });
   }
   try {
-    let supabase2 = supabaseWithAuth(req);
-
     //fetching for whatif
-    const { data, error } = await supabase2
+    const { data, error } = await supabase
       .from("whatifs")
       .select("*")
       .eq("id", parsedId);
@@ -100,35 +98,43 @@ router.post("/whatIf", verifyToken, async (req, res) => {
       return res.status(404).json({ message: "WhatIf not Founded" });
     }
 
-    let userId = getId(req.cookies.access_token);
-    // fetching like status of user
-    let { data: likeData, error: likeError } = await supabase2
-      .from("likes")
-      .select("*")
-      .eq("whatifID", parsedId)
-      .eq("userID", userId)
-      .maybeSingle();
+    if (req.cookies.access_token) {
+      let userId = getId(req.cookies.access_token);
 
-    if (likeError) {
-      console.error(
-        "Error while fetching likes for a single post view: ",
-        likeError
-      );
-      //yaha return nhi kia , kiu ky agr yaha error aata ha
-      //usky begair bhi post show kr skty hain
+      if (userId) {
+        let supabase2 = supabaseWithAuth(req);
+
+        let { data: likeData, error: likeError } = await supabase2
+          .from("likes")
+          .select("*")
+          .eq("whatifID", parsedId)
+          .eq("userID", userId)
+          .maybeSingle();
+
+        if (likeError) {
+          console.error(
+            "Error while fetching likes for a single post view: ",
+            likeError
+          );
+          //yaha return nhi kia , kiu ky agr yaha error aata ha
+          //usky begair bhi post show kr skty hain
+        }
+        let has_Liked = false;
+        if (likeData) {
+          has_Liked = true;
+        }
+        data[0].has_liked = has_Liked;
+      }
     }
-    let has_Liked = false;
-    if (likeData) {
-      has_Liked = true;
-    }
-    data[0].has_liked = has_Liked;
+
+    // fetching like status of user
+
     res.json(data[0]);
   } catch (err) {
     console.error("Error in whatif middleware: ", err);
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 router.post("/update", verifyToken, async (req, res) => {
   let { postId, publi } = req.body;
   if (!postId) {
