@@ -93,6 +93,7 @@ router.get("/whatIf/:postId", async (req, res) => {
   }
   try {
     //fetching for whatif
+
     const { data, error } = await supabase
       .from("whatifs")
       .select("*")
@@ -102,7 +103,7 @@ router.get("/whatIf/:postId", async (req, res) => {
       return res.status(500).json({ message: "Server side error" });
     }
     if (!data[0]) {
-      return res.status(404).json({ message: "WhatIf not Founded" });
+      return res.status(404).json({ message: "WhatIf not Found" });
     }
 
     if (req.cookies.access_token) {
