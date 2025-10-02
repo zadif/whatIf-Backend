@@ -47,21 +47,28 @@ router.get("/self/:name", verifyToken, async (req, res) => {
     console.error("Error in feed middleware: ", err);
   }
 });
-router.get("/feed", verifyToken, async (req, res) => {
+router.get("/feed/:offset", verifyToken, async (req, res) => {
+  let { offset } = req.params;
+  if (offset) {
+    offset = Number(offset);
+  } else {
+    offset = 0;
+  }
   try {
     const decoded = jwt.decode(req.cookies.access_token);
     const userId = decoded.sub;
     let supabase2 = supabaseWithAuth(req);
     const { data, error } = await supabase2.rpc("get_feed", {
       user_uuid: userId,
-      limit_count: 20, // fetch 20 posts
-      offset_count: 0, // skip first 0 posts (first page)
+      limit_count: 10, // fetch 20 posts
+      offset_count: offset * 10, // skip first 0 posts (first page)
     });
 
     if (error) {
       console.error("Error fetching feed:", error);
       return res.status(500).json({ message: error.message });
     }
+
     res.json(data);
   } catch (err) {
     console.error("Error in feed middleware: ", err);
