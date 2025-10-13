@@ -16,6 +16,7 @@ import refresh from "./routes/refresh.js";
 import generate from "./routes/generate.js";
 import fetching from "./routes/fetching.js";
 import like from "./routes/like.js";
+import comment from "./routes/comments.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -41,6 +42,7 @@ app.use(refresh);
 app.use(generate);
 app.use(fetching);
 app.use(like);
+app.use(comment);
 
 app.get("/hello", verifyToken, (req, res) => {
   console.log("hello");
