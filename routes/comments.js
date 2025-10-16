@@ -11,6 +11,7 @@ let router = express.Router();
 router.post("/comment", verifyToken, async (req, res) => {
   try {
     let { comment, postId, parentCommentId } = req.body;
+    //  console.log(comment, postId, parentCommentId);
     if (!postId || !comment || parentCommentId === null) {
       return res.status(400).json({ message: "Missing" });
     }
@@ -35,19 +36,23 @@ router.post("/comment", verifyToken, async (req, res) => {
     let token = req.cookies.access_token;
     let userId = getId(token);
     let supabase2 = supabaseWithAuth(req);
-    const { error } = await supabase2.from("comments").insert({
-      comment,
-      postId: parsedId,
-      userId,
+    const { data, error } = await supabase2
+      .from("comments")
+      .insert({
+        comment,
+        postId: parsedId,
+        userId,
 
-      parentCommentId: parsedCommentId,
-    });
+        parentCommentId: parsedCommentId,
+      })
+      .select()
+      // specify you want a single value returned, otherwise it returns a list.
+      .single();
     if (error) {
       console.error("Error while inserting comment in supabase: ", error);
       return res.status(500).json({ message: "Server side error" });
     }
-
-    res.sendStatus(200);
+    res.status(200).json({ id: data.id });
   } catch (err) {
     console.error("Error in post Comment middleware: ", err);
     return res.status(500).json({ message: "Internal server error" });
